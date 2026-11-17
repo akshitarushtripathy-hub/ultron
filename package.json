@@ -1,0 +1,32 @@
+{
+  "name": "ultron-orb",
+  "version": "1.0.0",
+  "private": false,
+  "description": "ULTRON — a fiery holographic AI orb with gesture control, voice, multi-provider AI and Hermes Android device control.",
+  "author": "akshitarushtripathy-hub",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akshitarushtripathy-hub/ultron.git"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.18",
+    "next": "^16.4.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.173.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.173.0",
+    "typescript": "^5.7.0"
+  }
+}
