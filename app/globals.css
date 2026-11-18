@@ -137,5 +137,19 @@ button { cursor: pointer; }
 .onboard__lead { margin: 10px 0 24px; font-size: 11px; color: var(--muted); }
 .onboard .field { text-align: left; }
 
+/* ---- camera preview ------------------------------------------------------ */
+.camera-panel {
+  position: absolute; right: 28px; top: 78px; width: 208px; height: 156px;
+  border: 1px solid rgba(255,138,31,0.25); border-radius: 10px; overflow: hidden;
+  background: rgba(3,5,8,0.8); opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.camera-panel.visible { opacity: 1; }
+.camera-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0.55; }
+.camera-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.camera-status {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 5px 8px;
+  background: rgba(0,0,0,0.6); color: var(--orange-bright); font-size: 9px; letter-spacing: 0.16em; text-align: center;
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }

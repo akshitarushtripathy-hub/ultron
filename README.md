@@ -68,13 +68,22 @@ You can also switch provider by voice: _"use groq"_, _"switch to claude"_, etc.
 
 ## 5. Controls
 
+### Mouse / touch
+
+| Input | Action |
+| --- | --- |
+| **Drag** | Spin the orb (damped, smooth OrbitControls) |
+| **Scroll / pinch** | Zoom in & out |
+| `R` | Reset the view |
+| `+` / `-` | Zoom in / out |
+
 ### Gestures (webcam)
 
-Click the **✋** button (top-right) and allow camera access:
+Click the **✋** button (top-right) and allow camera access. A small mirrored preview with hand landmarks appears in the corner:
 
 | Gesture | Action |
 | --- | --- |
-| **Pinch** thumb + index on **one** hand, move sideways | Spin the orb |
+| **Pinch** thumb + index on **one** hand, move | Spin the orb |
 | **Pinch with both** hands, spread / bring together | Zoom in / out |
 
 The model loads from Google's CDN on first activation, so keep an internet connection handy.
@@ -112,8 +121,8 @@ Quick version:
 
 | File | Purpose |
 | --- | --- |
-| `lib/orbScene.ts` | Three.js scene, shaders, bloom and orbit animation |
-| `lib/handTracker.ts` | MediaPipe hand landmarks + pinch detection |
+| `lib/orbScene.ts` | Exact Three.js orb from the public ULTRON interface — layered wireframe shells, geodesic core, drifting code, debris, dust, scan rings, bloom + chromatic aberration, damped OrbitControls |
+| `lib/handTracker.ts` | MediaPipe hand landmarks + pinch hysteresis with an on-screen overlay |
 | `lib/ai.ts` | Provider-agnostic LLM client (server-side) |
 | `lib/ultron-db.ts` | ULTRON persona / system-prompt database |
 | `lib/hermes.ts` | Hermes relay WebSocket client + Android tools |

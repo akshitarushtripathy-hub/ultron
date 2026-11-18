@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createOrb, type OrbControls } from '@/lib/orbScene';
-import { createHandTracker } from '@/lib/handTracker';
+import { createOrbScene, type OrbSceneApi } from '@/lib/orbScene';
+import { HandTracker, type TrackerStatus } from '@/lib/handTracker';
 import { HermesClient, ANDROID_TOOLS, type HermesStatus } from '@/lib/hermes';
 import type { ProviderId } from '@/lib/config-store';
 
@@ -40,8 +40,9 @@ const Icon = {
 export default function Ultron() {
   const orbHost = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const orb = useRef<OrbControls | null>(null);
-  const tracker = useRef<{ stop: () => void } | null>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
+  const orb = useRef<OrbSceneApi | null>(null);
+  const tracker = useRef<HandTracker | null>(null);
   const recognition = useRef<any>(null);
   const hermes = useRef<HermesClient | null>(null);
   const mode = useRef<'asleep' | 'awake'>('asleep');
@@ -57,6 +58,7 @@ export default function Ultron() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [hermesOpen, setHermesOpen] = useState(false);
   const [gesturesOn, setGesturesOn] = useState(false);
+  const [trackerStatus, setTrackerStatus] = useState<TrackerStatus>({ hands: 0, mode: 'idle' });
   const [micOn, setMicOn] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<ProviderId>('groq');
   const [apiKey, setApiKey] = useState('');
@@ -101,10 +103,10 @@ export default function Ultron() {
   // --- orb -----------------------------------------------------------------
   useEffect(() => {
     if (!orbHost.current) return;
-    const controls = createOrb(orbHost.current);
+    const controls = createOrbScene(orbHost.current);
     orb.current = controls;
     loadConfig();
-    return () => { controls.dispose(); orb.current = null; };
+    return () => { tracker.current?.stop(); tracker.current = null; controls.dispose(); orb.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -115,8 +117,8 @@ export default function Ultron() {
     const u = new SpeechSynthesisUtterance(text.replace(/[*_`#]/g, ''));
     u.rate = 1.0;
     u.pitch = 0.85;
-    u.onstart = () => { orb.current?.setEnergy(0.9); setStatusActive(true); setStatusText('Transmitting…'); };
-    u.onend = () => { orb.current?.setEnergy(0.35); setStatusActive(false); setStatusText(`Say “${configRef.current.identity.assistantName}” to awaken me`); };
+    u.onstart = () => { orb.current?.rotateBy(0.06, 0); setStatusActive(true); setStatusText('Transmitting…'); };
+    u.onend = () => { setStatusActive(false); setStatusText(`Say “${configRef.current.identity.assistantName}” to awaken me`); };
     speechSynthesis.speak(u);
   }
 
@@ -129,7 +131,6 @@ export default function Ultron() {
     mode.current = 'asleep';
     commandBuffer.current = '';
     setTranscript('');
-    orb.current?.setEnergy(0.35);
     setStatusActive(false);
     setStatusText(`Say “${configRef.current.identity.assistantName}” to awaken me`);
   }
@@ -137,8 +138,7 @@ export default function Ultron() {
   function wake() {
     mode.current = 'awake';
     commandBuffer.current = '';
-    orb.current?.pulse();
-    orb.current?.setEnergy(0.75);
+    orb.current?.zoomBy(0.92);
     setStatusActive(true);
     setStatusText('Listening…');
     speak('Yes?');
@@ -178,7 +178,7 @@ export default function Ultron() {
     } else {
       setStatusActive(true);
       setStatusText('Processing…');
-      orb.current?.setEnergy(0.8);
+      orb.current?.rotateBy(0.12, 0);
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
@@ -241,29 +241,53 @@ export default function Ultron() {
   }
 
   // --- gestures ------------------------------------------------------------
+  function stopGestures() {
+    tracker.current?.stop();
+    tracker.current = null;
+    setGesturesOn(false);
+    setTrackerStatus({ hands: 0, mode: 'idle' });
+    setStatusText('Gesture control disabled');
+  }
+
   async function toggleGestures() {
-    if (tracker.current) {
-      tracker.current.stop();
-      tracker.current = null;
-      setGesturesOn(false);
-      setStatusText('Gesture control disabled');
-      return;
-    }
-    if (!videoRef.current) return;
+    if (tracker.current) { stopGestures(); return; }
+    if (!videoRef.current || !overlayRef.current) return;
     try {
       setStatusText('Loading hand tracking…');
-      const t = await createHandTracker(videoRef.current, {
-        onSpin: (d) => orb.current?.spin(d),
-        onZoom: (d) => orb.current?.zoom(d),
-        onPinch: (n) => { setStatusText(n ? `${n} hand${n > 1 ? 's' : ''} locked — spin / zoom` : 'Gesture control active'); },
+      const t = new HandTracker(videoRef.current, overlayRef.current, {
+        onRotate: (dt, dp) => orb.current?.rotateBy(dt, dp),
+        onZoom: (factor) => orb.current?.zoomBy(factor),
+        onStatus: (s) => {
+          setTrackerStatus(s);
+          const label = s.mode === 'spin' ? 'SPIN' : s.mode === 'zoom' ? 'ZOOM' : 'STANDBY';
+          setStatusText(s.hands ? `${s.hands} HAND${s.hands > 1 ? 'S' : ''} · ${label}` : 'Gesture control active — show hands');
+        },
       });
       tracker.current = t;
+      await t.start();
       setGesturesOn(true);
       setStatusText('Gesture control active — pinch to spin');
     } catch (e: any) {
-      setStatusText(`Camera unavailable: ${e.message?.slice(0, 60)}`);
+      tracker.current?.stop();
+      tracker.current = null;
+      setGesturesOn(false);
+      setStatusText(e?.name === 'NotAllowedError' ? 'Camera access denied' : `Camera unavailable: ${String(e?.message || e).slice(0, 50)}`);
     }
   }
+
+  // --- keyboard shortcuts --------------------------------------------------
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT')) return;
+      if (e.key === 'g' || e.key === 'G') toggleGestures();
+      else if (e.key === 'r' || e.key === 'R') orb.current?.resetView();
+      else if (e.key === '+' || e.key === '=') orb.current?.zoomIn();
+      else if (e.key === '-' || e.key === '_') orb.current?.zoomOut();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   // --- hermes --------------------------------------------------------------
   async function connectHermes() {
@@ -289,7 +313,15 @@ export default function Ultron() {
       <div id="orb" ref={orbHost} />
       <div className="vignette" />
       <div className="scanlines" />
-      <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
+      <div className={`camera-panel ${gesturesOn ? 'visible' : ''}`}>
+        <video ref={videoRef} className="camera-video" playsInline muted />
+        <canvas ref={overlayRef} width={208} height={156} className="camera-overlay" />
+        <div className="camera-status">
+          {trackerStatus.hands
+            ? `${trackerStatus.hands} HAND${trackerStatus.hands > 1 ? 'S' : ''} · ${trackerStatus.mode.toUpperCase()}`
+            : 'SHOW HANDS'}
+        </div>
+      </div>
 
       <div className="hud">
         <div className="brand">
@@ -313,7 +345,7 @@ export default function Ultron() {
         <div className="statusbar">
           <div className={`status ${statusActive ? 'active' : ''}`}><span className="status__dot" />{statusText}</div>
           <div className={`transcript ${transcript ? 'show' : ''}`}>{transcript}</div>
-          <form className="cmd" onSubmit={(e) => { e.preventDefault(); const v = (e.currentTarget.elements.namedItem('cmd') as HTMLInputElement).value.trim(); if (!v) return; (e.currentTarget.elements.namedItem('cmd') as HTMLInputElement).value = ''; orb.current?.pulse(); runCommand(v); }}>
+          <form className="cmd" onSubmit={(e) => { e.preventDefault(); const v = (e.currentTarget.elements.namedItem('cmd') as HTMLInputElement).value.trim(); if (!v) return; (e.currentTarget.elements.namedItem('cmd') as HTMLInputElement).value = ''; orb.current?.rotateBy(0.08, 0); runCommand(v); }}>
             <span>&gt;</span>
             <input name="cmd" placeholder="issue a command…" autoComplete="off" />
           </form>
