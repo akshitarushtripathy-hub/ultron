@@ -63,6 +63,8 @@ export function createOrb(container: HTMLElement): OrbControls {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setClearColor(0x05070d, 0);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.62;
   container.appendChild(renderer.domElement);
 
   const orb = new THREE.Group();
@@ -73,25 +75,25 @@ export function createOrb(container: HTMLElement): OrbControls {
   // --- molten core ---------------------------------------------------------
   const core = new THREE.Mesh(
     new THREE.IcosahedronGeometry(0.48, 3),
-    new THREE.MeshBasicMaterial({ color: 0xff7d14 })
+    new THREE.MeshBasicMaterial({ color: 0xc25a10 })
   );
   orb.add(core);
 
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({
     map: glowTex,
-    color: 0xff7410,
+    color: 0xa84810,
     blending: THREE.AdditiveBlending,
     transparent: true,
-    opacity: 0.75,
+    opacity: 0.4,
     depthWrite: false,
   }));
-  halo.scale.set(3.6, 3.6, 1);
+  halo.scale.set(3.0, 3.0, 1);
   orb.add(halo);
 
   // --- spiral inner core ---------------------------------------------------
   const spiral = new THREE.Mesh(
     new THREE.TorusKnotGeometry(0.95, 0.018, 260, 8, 2, 3),
-    new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.85 })
+    new THREE.MeshBasicMaterial({ color: 0x9a5a1c, transparent: true, opacity: 0.45 })
   );
   orb.add(spiral);
 
@@ -105,7 +107,7 @@ export function createOrb(container: HTMLElement): OrbControls {
   ringRotations.forEach((rot) => {
     const ring = new THREE.Mesh(
       new THREE.TorusGeometry(2.05, 0.012, 8, 180),
-      new THREE.MeshBasicMaterial({ color: 0xff8a34, transparent: true, opacity: 0.92, blending: THREE.AdditiveBlending })
+      new THREE.MeshBasicMaterial({ color: 0xc06a28, transparent: true, opacity: 0.62, blending: THREE.AdditiveBlending })
     );
     ring.rotation.set(rot[0], rot[1], rot[2]);
     orb.add(ring);
@@ -113,7 +115,7 @@ export function createOrb(container: HTMLElement): OrbControls {
 
     const ring2 = new THREE.Mesh(
       new THREE.TorusGeometry(2.28, 0.006, 6, 180),
-      new THREE.MeshBasicMaterial({ color: 0xff5a00, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending })
+      new THREE.MeshBasicMaterial({ color: 0x8a3a08, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending })
     );
     ring2.rotation.copy(ring.rotation);
     orb.add(ring2);
@@ -125,10 +127,10 @@ export function createOrb(container: HTMLElement): OrbControls {
   for (let i = 0; i < 3; i++) {
     const e = new THREE.Mesh(
       new THREE.SphereGeometry(0.075, 12, 12),
-      new THREE.MeshBasicMaterial({ color: 0xffe0a0 })
+      new THREE.MeshBasicMaterial({ color: 0xb07030 })
     );
     const eGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: glowTex, color: 0xffa030, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false,
+      map: glowTex, color: 0x9a5018, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.35, depthWrite: false,
     }));
     eGlow.scale.set(0.6, 0.6, 1);
     e.add(eGlow);
@@ -141,7 +143,7 @@ export function createOrb(container: HTMLElement): OrbControls {
   const codeLines = ['ULTRON v1.0', 'SYSTEM ONLINE', '0x7F3A', 'NEURAL LINK', 'HANDS: HERMES', '0.98.44', 'TARGET ACQUIRED'];
   codeLines.forEach((line, i) => {
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: codeTexture(line), transparent: true, opacity: 0.5, depthWrite: false,
+      map: codeTexture(line), transparent: true, opacity: 0.28, depthWrite: false,
     }));
     sprite.scale.set(1.7, 0.22, 1);
     const a = (i / codeLines.length) * Math.PI * 2;
@@ -155,7 +157,7 @@ export function createOrb(container: HTMLElement): OrbControls {
   for (let i = 0; i < 46; i++) {
     const d = new THREE.Mesh(
       new THREE.TetrahedronGeometry(0.015 + Math.random() * 0.035),
-      new THREE.MeshBasicMaterial({ color: 0xff8c2a, transparent: true, opacity: 0.6 })
+      new THREE.MeshBasicMaterial({ color: 0x9a5018, transparent: true, opacity: 0.28 })
     );
     const r = 2.6 + Math.random() * 1.8;
     const a = Math.random() * Math.PI * 2;
@@ -178,7 +180,7 @@ export function createOrb(container: HTMLElement): OrbControls {
   const dustGeo = new THREE.BufferGeometry();
   dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
   const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
-    color: 0xffb066, size: 0.028, transparent: true, opacity: 0.32,
+    color: 0xa05a28, size: 0.024, transparent: true, opacity: 0.16,
     blending: THREE.AdditiveBlending, depthWrite: false,
   }));
   scene.add(dust);
@@ -188,7 +190,7 @@ export function createOrb(container: HTMLElement): OrbControls {
   function emitScan() {
     const mesh = new THREE.Mesh(
       new THREE.TorusGeometry(1, 0.008, 6, 128),
-      new THREE.MeshBasicMaterial({ color: 0xff9a3c, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending })
+      new THREE.MeshBasicMaterial({ color: 0x9a5018, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending })
     );
     mesh.rotation.x = Math.PI / 2;
     orb.add(mesh);
@@ -201,7 +203,7 @@ export function createOrb(container: HTMLElement): OrbControls {
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(container.clientWidth, container.clientHeight),
-    0.95, 0.45, 0.15
+    0.45, 0.3, 0.2
   );
   composer.addPass(bloom);
   const chromatic = new ShaderPass(ChromaticAberrationShader);
@@ -242,20 +244,20 @@ export function createOrb(container: HTMLElement): OrbControls {
     debris.forEach((d, i) => { d.rotation.x += 0.008 + i * 0.0002; d.rotation.y += 0.006; });
     dust.rotation.y += 0.0006;
     dust.rotation.x += 0.0002;
-    codes.forEach((c, i) => { c.material.opacity = 0.25 + 0.25 * (1 + Math.sin(t * 1.2 + i)) / 2; });
+    codes.forEach((c, i) => { c.material.opacity = 0.12 + 0.12 * (1 + Math.sin(t * 1.2 + i)) / 2; });
 
     for (let i = scans.length - 1; i >= 0; i--) {
       const s = scans[i];
       s.life += dt;
       const scale = 1 + s.life * 2.2;
       s.mesh.scale.setScalar(scale);
-      (s.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.7 - s.life * 0.7);
+      (s.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.32 - s.life * 0.32);
       if (s.life > 1) { orb.remove(s.mesh); scans.splice(i, 1); }
     }
     if (t - lastScan > 3.2) { emitScan(); lastScan = t; }
 
     energy += (energyTarget - energy) * 0.06;
-    bloom.strength = 0.85 + energy * 0.55;
+    bloom.strength = 0.42 + energy * 0.25;
     camera.position.z += (targetZoom - camera.position.z) * 0.08;
 
     composer.render();
